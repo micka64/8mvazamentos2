@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fórum - 8M Vazamentos</title>
+</head>
+<body>
+    <style>
+        * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #1c1e21;
+    color: #ccc;
+    padding: 20px;
+    text-align: center;
+}
+
+header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #2c2f33;
+    padding: 10px 20px;
+    margin-bottom: 20px;
+}
+
+.search-bar {
+    display: flex;
+    gap: 10px;
+}
+
+.search-bar input {
+    width: 300px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #7289da;
+    background-color: #1c1e21;
+    color: white;
+}
+
+.search-bar button {
+    background-color: #7289da;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#forumSection {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.forum-post {
+    background-color: #2c2f33;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: left;
+}
+
+.forum-post h3 {
+    color: #7289da;
+}
+
+.forum-post p {
+    margin-top: 10px;
+}
+
+.forum-post img {
+    max-width: 100px;
+    margin-top: 10px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #2c2f33;
+    padding: 20px;
+    border-radius: 10px;
+    width: 400px;
+    text-align: left;
+    color: white;
+}
+
+.modal-content input,
+.modal-content textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #1c1e21;
+    border: 1px solid #7289da;
+    color: white;
+    border-radius: 5px;
+}
+
+.modal-content button {
+    width: 100%;
+    padding: 10px;
+    background-color: #7289da;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    cursor: pointer;
+    color: white;
+    font-size: 20px;
+}
+
+    </style>
+    <header>
+        <div class="search-bar">
+            <input type="text" placeholder="Buscar ou criar postagem..." id="searchInput">
+            <button id="newPostButton">Nova postagem</button>
+            <button id="editProfileButton">Editar Perfil</button>
+        </div>
+    </header>
+
+    <main>
+        <section id="forumSection">
+            <!-- Aqui serão listados os fóruns -->
+        </section>
+    </main>
+
+    <!-- Modal para criar nova postagem -->
+    <div id="postModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Criar Nova Postagem</h2>
+            <form id="postForm">
+                <input type="text" id="titulo" placeholder="Título" required>
+                <textarea id="descricao" placeholder="Descrição"></textarea>
+                <input type="file" id="file" accept="file/*">
+                <input type="file" id="imagem" accept="image/*">
+                <button type="submit">Publicar</button>
+                <p id="error-message" style="color: red; display: none;"></p> <!-- Mensagem de erro -->
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para ver postagens e comentários -->
+    <div id="commentModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="postTitle">Título da Postagem</h2>
+            <p id="postDescription">Descrição da Postagem</p>
+            <div id="commentSection">
+                <!-- Comentários serão listados aqui -->
+            </div>
+            <form id="commentForm">
+                <textarea id="novoComentario" placeholder="Adicionar comentário..." required></textarea>
+                <button type="submit">Comentar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para editar perfil -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Editar Perfil</h2>
+            <form id="profileForm">
+                <input type="text" id="username" placeholder="Nome de usuário" required>
+                <textarea id="bio" placeholder="Biografia"></textarea>
+                <button type="submit">Salvar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis para modais 
+        const postModal = document.getElementById("postModal");
+        const commentModal = document.getElementById("commentModal");
+        const profileModal = document.getElementById("profileModal");
+        const forumSection = document.getElementById("forumSection");
+        const commentSection = document.getElementById("commentSection");
+        const errorMessage = document.getElementById("error-message");
+
+        // Carregar perfil do local storage ao iniciar
+        document.addEventListener("DOMContentLoaded", () => {
+            loadUserProfile();
+            const posts = JSON.parse(localStorage.getItem("forumPosts")) || [];
+            posts.forEach(post => {
+                createPostElement(post.titulo, post.descricao);
+            });
+        });
+
+        // Abrir modal de nova postagem
+        document.getElementById("newPostButton").addEventListener("click", () => {
+            postModal.style.display = "block";
+        });
+
+        // Abrir modal de perfil
+        document.getElementById("editProfileButton").addEventListener("click", () => {
+            profileModal.style.display = "block";
+        });
+
+        // Fechar modais
+        document.querySelectorAll(".close").forEach(closeBtn => {
+            closeBtn.onclick = () => {
+                postModal.style.display = "none";
+                commentModal.style.display = "none";
+                profileModal.style.display = "none";
+                errorMessage.style.display = "none"; // Limpar mensagem de erro
+            };
+        });
+
+        // Função para criar nova postagem
+        document.getElementById("postForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const titulo = document.getElementById("titulo").value;
+            const descricao = document.getElementById("descricao").value;
+
+            const userProfile = JSON.parse(localStorage.getItem("userProfile")) || { username: "Anônimo" };
+            const username = userProfile.username;
+
+            // Verificar limites de postagem
+            const postLimits = JSON.parse(localStorage.getItem("postLimits")) || {};
+            const currentTime = new Date().getTime();
+            const userPostData = postLimits[username] || { count: 0, lastPostTime: 0 };
+
+            // Checa se passou o tempo de 3 horas
+            if (currentTime - userPostData.lastPostTime >= 3 * 60 * 60 * 1000) {
+                userPostData.count = 0; // Reseta contagem se passou 3 horas
+            }
+
+            // Limitar a 5 postagens
+            if (userPostData.count < 5) {
+                userPostData.count++;
+                userPostData.lastPostTime = currentTime;
+
+                // Salvar nova postagem no local storage
+                const posts = JSON.parse(localStorage.getItem("forumPosts")) || [];
+                posts.push({ titulo, descricao });
+                localStorage.setItem("forumPosts", JSON.stringify(posts));
+
+                // Cria um novo fórum com título e descrição
+                createPostElement(titulo, descricao);
+                postModal.style.display = "none";
+                errorMessage.style.display = "none"; // Limpar mensagem de erro
+
+                // Atualizar limites de postagem
+                postLimits[username] = userPostData;
+                localStorage.setItem("postLimits", JSON.stringify(postLimits));
+            } else {
+                errorMessage.textContent = "Você atingiu o limite de 5 postagens a cada 3 horas.";
+                errorMessage.style.display = "block"; // Mostrar mensagem de erro
+            }
+        });
+
+        // Função para criar o elemento da postagem
+        function createPostElement(titulo, descricao) {
+            const forumPost = document.createElement("div");
+            forumPost.classList.add("forum-post");
+            forumPost.innerHTML = `
+                <h3>${titulo}</h3>
+                <p>${descricao}</p>
+                <button class="viewPost">Ver Discussão</button>
+            `;
+
+            // Adicionar ao fórum
+            forumSection.appendChild(forumPost);
+
+            // Configurar visualização de discussão
+            forumPost.querySelector(".viewPost").addEventListener("click", () => {
+                document.getElementById("postTitle").innerText = titulo;
+                document.getElementById("postDescription").innerText = descricao;
+                commentSection.innerHTML = ""; // Limpar comentários anteriores
+                loadComments(titulo); // Carregar comentários da postagem
+                commentModal.style.display = "block";
+            });
+        }
+
+        // Função para carregar comentários da postagem
+        function loadComments(titulo) {
+            const comments = JSON.parse(localStorage.getItem(titulo)) || [];
+            comments.forEach(comment => {
+                addCommentElement(comment.username, comment.comment);
+            });
+        }
+
+        // Função para adicionar comentários com nome de usuário
+        document.getElementById("commentForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const comentario = document.getElementById("novoComentario").value;
+            const postTitle = document.getElementById("postTitle").innerText;
+            const userProfile = JSON.parse(localStorage.getItem("userProfile")) || { username: "Anônimo" };
+
+            // Salvar comentário no local storage
+            const comments = JSON.parse(localStorage.getItem(postTitle)) || [];
+            comments.push({ username: userProfile.username, comment: comentario });
+            localStorage.setItem(postTitle, JSON.stringify(comments));
+
+            addCommentElement(userProfile.username, comentario);
+            document.getElementById("novoComentario").value = ""; // Limpar campo de comentário
+        });
+
+        // Função para adicionar elemento de comentário
+        function addCommentElement(username, comentario) {
+            const novoComentarioDiv = document.createElement("div");
+            novoComentarioDiv.classList.add("comment");
+            novoComentarioDiv.innerHTML = `<strong>${username}</strong>: ${comentario}`;
+            commentSection.appendChild(novoComentarioDiv);
+        }
+
+        // Função para carregar o perfil do usuário
+        function loadUserProfile() {
+            const profile = JSON.parse(localStorage.getItem("userProfile")) || { username: "", bio: "" };
+            document.getElementById("username").value = profile.username;
+            document.getElementById("bio").value = profile.bio;
+        }
+
+        // Função para salvar o perfil do usuário
+        document.getElementById("profileForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const username = document.getElementById("username").value;
+            const bio = document.getElementById("bio").value;
+
+            const userProfile = { username, bio };
+            localStorage.setItem("userProfile", JSON.stringify(userProfile));
+
+            loadUserProfile(); // Atualiza a exibição do perfil
+            profileModal.style.display = "none"; // Fecha o modal
+        });
+    </script>
+</body>
+</html>
